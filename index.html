@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Κέρασμα με Κωδικό Διαχειριστή</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    max-width: 450px;
+    margin: 20px auto;
+    background-color: #121212;
+    color: #eee;
+  }
+  h1, h2 {
+    text-align: center;
+  }
+  input, button {
+    padding: 8px;
+    font-size: 1em;
+    margin-top: 8px;
+    width: 100%;
+    box-sizing: border-box;
+    border: none;
+    border-radius: 4px;
+  }
+  input {
+    background-color: #222;
+    color: #eee;
+  }
+  button {
+    background-color: #3a86ff;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  button:hover {
+    background-color: #265ecf;
+  }
+  ul {
+    list-style: none;
+    padding: 0;
+    margin-top: 10px;
+    max-height: 150px;
+    overflow-y: auto;
+  }
+  li {
+    padding: 6px 10px;
+    border-bottom: 1px solid #444;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .winner {
+    font-weight: bold;
+    color: #00ff88;
+    margin-top: 20px;
+    font-size: 1.3em;
+    text-align: center;
+  }
+  #stats {
+    margin-top: 20px;
+  }
+  #stats h2 {
+    margin-bottom: 10px;
+  }
+  #resetBtn {
+    background-color: #ff4444;
+    margin-top: 10px;
+  }
+  #resetBtn:hover {
+    background-color: #cc3333;
+  }
+  #adminPanel {
+    display: none;
+    margin-top: 20px;
+    border: 1px solid #444;
+    padding: 15px;
+    border-radius: 6px;
+  }
+  #adminToggleBtn {
+    margin-top: 15px;
+    background-color: #ffaa00;
+  }
+  #adminToggleBtn:hover {
+    background-color: #cc8800;
+  }
+</style>
+</head>
+<body>
+  <h1>Κέρασμα με Κωδικό Διαχειριστή</h1>
+
+  <button id="adminToggleBtn">Είσοδος Διαχειριστή</button>
+
+  <div id="adminPanel">
+    <label for="newMember">Προσθήκη μέλους:</label>
+    <input type="text" id="newMember" placeholder="Όνομα μέλους" />
+    <button onclick="addMember()">Προσθήκη μέλους</button>
+
+    <h2>Μέλη ομάδας</h2>
+    <ul id="memberList"></ul>
+
+    <label for="newItem">Προσθήκη είδους κερασμάτων:</label>
+    <input type="text" id="newItem" placeholder="π.χ. Καφές, Ποτό" />
+    <button onclick="addItem()">Προσθήκη είδους</button>
+
+    <h2>Είδη κερασμάτων</h2>
+    <ul id="itemsList"></ul>
+
+    <button id="resetBtn" onclick="resetStats()">Επαναφορά Στατιστικών</button>
+  </div>
+
+  <div id="stats">
+    <h2>Στατιστικά Κερασμάτων</h2>
+    <ul id="statsList"></ul>
+  </div>
+
+  <button onclick="chooseWinner()" style="margin-top: 20px;">Ποιος κεράει σήμερα;</button>
+
+  <div id="winner" class="winner"></div>
+
+<script>
+  const adminPassword = "1234";  // Βάλε εδώ τον κωδικό που θες
+
+  let members = [];
+  let items = [];
+  let stats = {};
+
+  function loadData() {
+    const m = localStorage.getItem('kerasma_members');
+    const i = localStorage.getItem('kerasma_items');
+    const s = localStorage.getItem('kerasma_stats');
+    members = m ? JSON.parse(m) : [];
+    items = i ? JSON.parse(i) : [];
+    stats = s ? JSON.parse(s) : {};
+  }
+
+  function saveData() {
+    localStorage.setItem('kerasma_members', JSON.stringify(members));
+    localStorage.setItem('kerasma_items', JSON.stringify(items));
+    localStorage.setItem('kerasma_stats', JSON.stringify(stats));
+  }
+
+  function renderMembers() {
+    const list = document.getElementById('memberList');
+    list.innerHTML = '';
+    members.forEach(m => {
+      const li = document.createElement('li');
+      li.textContent = m;
+      list.appendChild(li);
+    });
+  }
+
+  function renderItems() {
+    const list = document.getElementById('itemsList');
+    list.innerHTML = '';
+    items.forEach(item => {
+      const li = document.createElement('li');
+      li.textContent = item;
+      list.appendChild(li);
+    });
+  }
+
+  function renderStats() {
+    const list = document.getElementById('statsList');
+    list.innerHTML = '';
+    if (members.length === 0) {
+      list.innerHTML = '<li>Δεν υπάρχουν μέλη.</li>';
+      return;
+    }
+    members.forEach(m => {
+      const count = stats[m] || 0;
+      const li = document.createElement('li');
+      li.textContent = `${m}: ${count} φορές`;
+      list.appendChild(li);
+    });
+  }
+
+  function addMember() {
+    const input = document.getElementById('newMember');
+    const name = input.value.trim();
+    if (name && !members.includes(name)) {
+      members.push(name);
+      stats[name] = 0;
+      input.value = '';
+      saveData();
+      renderMembers();
+      renderStats();
+      document.getElementById('winner').textContent = '';
+    } else {
+      alert('Πρόσθεσε ένα μοναδικό όνομα.');
+    }
+  }
+
+  function addItem() {
+    const input = document.getElementById('newItem');
+    const item = input.value.trim();
+    if (item && !items.includes(item)) {
+      items.push(item);
+      input.value = '';
+      saveData();
+      renderItems();
+      document.getElementById('winner').textContent = '';
+    } else {
+      alert('Πρόσθεσε ένα μοναδικό είδος.');
+    }
+  }
+
+  function chooseWinner() {
+    if (members.length === 0) {
+      alert('Πρόσθεσε πρώτα μέλη.');
+      return;
+    }
+    if (items.length === 0) {
+      alert('Πρόσθεσε πρώτα είδη κερασμάτων.');
+      return;
+    }
+    const winner = members[Math.floor(Math.random() * members.length)];
+    const drink = items[Math.floor(Math.random() * items.length)];
+    document.getElementById('winner').textContent = `Σήμερα κεράει: ${winner} 🍻 (${drink})`;
+
+    stats[winner] = (stats[winner] || 0) + 1;
+    saveData();
+    renderStats();
+  }
+
+  function resetStats() {
+    if (confirm('Είσαι σίγουρος ότι θέλεις να επαναφέρεις τα στατιστικά;')) {
+      stats = {};
+      members.forEach(m => stats[m] = 0);
+      saveData();
+      renderStats();
+      document.getElementById('winner').textContent = '';
+    }
+  }
+
+  function toggleAdminPanel() {
+    if (document.getElementById('adminPanel').style.display === 'block') {
+      document.getElementById('adminPanel').style.display = 'none';
+      document.getElementById('adminToggleBtn').textContent = 'Είσοδος Διαχειριστή';
+    } else {
+      const pass = prompt('Πληκτρολόγησε τον κωδικό διαχειριστή:');
+      if (pass === adminPassword) {
+        document.getElementById('adminPanel').style.display = 'block';
+        document.getElementById('adminToggleBtn').textContent = 'Έξοδος Διαχειριστή';
+      } else if(pass !== null) {
+        alert('Λάθος κωδικός!');
+      }
+    }
+  }
+
+  document.getElementById('adminToggleBtn').addEventListener('click', toggleAdminPanel);
+
+  // Αρχική φόρτωση
+  loadData();
+  renderMembers();
+  renderItems();
+  renderStats();
+</script>
+</body>
+</html>
